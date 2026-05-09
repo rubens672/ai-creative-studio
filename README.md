@@ -1,6 +1,9 @@
 # ai-creative-studio
 A Multi-Agent Creative Studio with Google's Agent Stack: ADK, A2A, MCP on Cloud Run &amp; Agent Runtime
 
+A huge thanks to [Saoussen Chaabnia](https://saoussen-chaabnia-ai.com) for the original project! I’m currently building on top of their great work. You can check out the source of inspiration here: [mas-a2a-gcp](https://github.com/Saoussen-CH/mas-a2a-gcp/tree/main). 
+Thank you Saoussen, great job!
+
 L'implementazione completa è disponibile come codelab pratico all'indirizzo [codelabs.developers.google.com](https://codelabs.developers.google.com/ai-creative-studio-adk-a2a?hl=it&authuser=3#0)
 
 Repository git originale [mas-a2a-gcp](https://github.com/Saoussen-CH/mas-a2a-gcp/tree/main)
