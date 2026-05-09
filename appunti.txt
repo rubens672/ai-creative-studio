@@ -1,0 +1,84 @@
+#Per testare localmente con la UI web di ADK
+uv run adk web agents --allow_origins='*'
+
+# Configurare le credenziali principali
+gcloud auth login
+
+# Configurare le credenziali predefinite dell'applicazione (ADC)
+gcloud auth application-default login
+
+# impostazioni variabili progetto
+export PROJECT_ID=$(gcloud config get-value project)
+export REGION="us-central1"        # Cloud Run deployment region
+echo "Project: $PROJECT_ID"
+
+# Abilitazione delle API richieste
+gcloud services enable \
+    aiplatform.googleapis.com \
+    apphub.googleapis.com \
+    run.googleapis.com \
+    cloudbuild.googleapis.com \
+    artifactregistry.googleapis.com \
+    generativelanguage.googleapis.com \
+    iam.googleapis.com \
+    cloudresourcemanager.googleapis.com \
+    storage.googleapis.com \
+    secretmanager.googleapis.com \
+    discoveryengine.googleapis.com \
+    dialogflow.googleapis.com
+
+
+# Configurazione delle variabili di ambiente
+cp .env.example .env
+sed -i "s|GOOGLE_CLOUD_PROJECT=your-project-id|GOOGLE_CLOUD_PROJECT=$(gcloud config get-value project)|" .env
+
+
+# Quindi crea il bucket GCS in cui Designer archivierà le immagini generate e aggiorna .env con il relativo nome
+export PROJECT_ID=$(gcloud config get-value project)
+export BUCKET_NAME="${PROJECT_ID}-campaign-images"
+
+gcloud storage buckets create gs://${BUCKET_NAME} \
+    --location=us-central1 \
+    --project=${PROJECT_ID}
+
+sed -i "s|GCS_IMAGES_BUCKET=your-project-id-campaign-images|GCS_IMAGES_BUCKET=${BUCKET_NAME}|" .env
+
+
+#  Poi configura il supporto degli URL immagine firmati. Creative Director genera link HTTPS cliccabili per ogni immagine nel riepilogo finale della campagna. Per farlo, è necessario un service account per firmare gli URL. Esegui questi comandi per configurarlo:
+export PROJECT_NUMBER=$(gcloud projects describe $(gcloud config get-value project) --format="value(projectNumber)")
+export SA_EMAIL="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
+#export AGENT_RUNTIME_SA="service-${PROJECT_NUMBER}@gcp-sa-aiplatform-re.iam.gserviceaccount.com"
+export AGENT_RUNTIME_SA="service-${PROJECT_NUMBER}@gcp-sa-aiplatform.iam.gserviceaccount.com"
+
+# creazione del AGENT_RUNTIME_SA ?
+gcloud beta services identity create \
+    --service=aiplatform.googleapis.com \
+    --project=${PROJECT_ID}
+
+# Allow your user account to sign URLs locally (adk web)
+gcloud iam service-accounts add-iam-policy-binding ${SA_EMAIL} \
+  --member="user:$(gcloud config get-value account)" \
+  --role="roles/iam.serviceAccountTokenCreator"
+
+# Allow Agent Runtime to sign URLs when deployed
+gcloud projects add-iam-policy-binding $(gcloud config get-value project) \
+  --member="serviceAccount:${AGENT_RUNTIME_SA}" \
+  --role="roles/iam.serviceAccountTokenCreator"
+
+# Save SA email and project number to .env
+grep -q "^SIGNING_SERVICE_ACCOUNT" .env \
+  && sed -i "s|^SIGNING_SERVICE_ACCOUNT=.*|SIGNING_SERVICE_ACCOUNT=${SA_EMAIL}|" .env \
+  || echo "SIGNING_SERVICE_ACCOUNT=${SA_EMAIL}" >> .env
+
+grep -q "^GOOGLE_CLOUD_PROJECT_NUMBER" .env \
+  && sed -i "s|^GOOGLE_CLOUD_PROJECT_NUMBER=.*|GOOGLE_CLOUD_PROJECT_NUMBER=${PROJECT_NUMBER}|" .env \
+  || echo "GOOGLE_CLOUD_PROJECT_NUMBER=${PROJECT_NUMBER}" >> .env
+
+
+# Installa le dipendenze
+# uv è un gestore di pacchetti Python moderno e veloce che gestisce gli ambienti virtuali e le installazioni in un unico strumento. È circa 10-100 volte più veloce di pip ed è il modo consigliato per gestire i progetti Python.
+# Il comando uv sync legge pyproject.toml e crea una directory .venv/ con tutte le dipendenze. Ogni specialista ha anche il proprio pyproject.toml utilizzato esclusivamente dalle build Docker. 
+# L'installazione condivisa riportata sopra copre tutto ciò che ti serve per i test locali.
+uv sync
+
+# Non è necessaria alcuna attivazione manuale. Tutti i comandi di questo codelab utilizzano uv run, che attiva automaticamente .venv in ~/ai-creative-studio/. Basta cd alla directory starter e aggiungere il prefisso uv run al comando.
