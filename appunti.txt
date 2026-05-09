@@ -82,3 +82,51 @@ grep -q "^GOOGLE_CLOUD_PROJECT_NUMBER" .env \
 uv sync
 
 # Non è necessaria alcuna attivazione manuale. Tutti i comandi di questo codelab utilizzano uv run, che attiva automaticamente .venv in ~/ai-creative-studio/. Basta cd alla directory starter e aggiungere il prefisso uv run al comando.
+
+#ruoli
+# Salva l'utente corrente in una variabile
+CURRENT_USER=$(gcloud config get-value account)
+
+# Assegna tutti i ruoli necessari uno ad uno
+for role in \
+  "roles/artifactregistry.admin" \
+  "roles/run.developer" \
+  "roles/cloudbuild.builds.editor" \
+  "roles/storage.admin" \
+  "roles/iam.serviceAccountUser"
+do
+  gcloud projects add-iam-policy-binding ${PROJECT_ID} \
+    --member="user:${CURRENT_USER}" \
+    --role="${role}" \
+    --condition=None
+done
+
+
+#Il comando più semplice e diretto per deployare un servizio su Google Cloud Run a partire da una cartella che contiene un Dockerfile
+#aggiornare le variabili nel file .env
+
+gcloud run deploy brand-strategist-agent --source ./agents/brand_strategist --region us-central1
+STRATEGIST_AGENT_URL=$(gcloud run services describe brand-strategist-agent --region us-central1 --format="value(status.url)")
+sed -i "s|^STRATEGIST_AGENT_URL=.*|STRATEGIST_AGENT_URL=${STRATEGIST_AGENT_URL}|" .env
+echo "STRATEGIST_URL: $STRATEGIST_URL"
+
+gcloud run deploy copywriter-agent --source ./agents/copywriter --region us-central1
+COPYWRITER_AGENT_URL=$(gcloud run services describe copywriter-agent --region us-central1 --format="value(status.url)")
+sed -i "s|^COPYWRITER_AGENT_URL=.*|COPYWRITER_AGENT_URL=${COPYWRITER_AGENT_URL}|" .env
+echo "COPYWRITER_AGENT_URL: $COPYWRITER_AGENT_URL"
+
+gcloud run deploy critic-agent --source ./agents/critic --region us-central1
+CRITIC_AGENT_URL=$(gcloud run services describe critic-agent --region us-central1 --format="value(status.url)")
+sed -i "s|^CRITIC_AGENT_URL=.*|CRITIC_AGENT_URL=${CRITIC_AGENT_URL}|" .env
+echo "CRITIC_AGENT_URL: $CRITIC_AGENT_URL"
+
+gcloud run deploy designer-agent --source ./agents/designer --region us-central1
+DESIGNER_AGENT_URL=$(gcloud run services describe designer-agent --region us-central1 --format="value(status.url)")
+sed -i "s|^DESIGNER_AGENT_URL=.*|DESIGNER_AGENT_URL=${DESIGNER_AGENT_URL}|" .env
+echo "DESIGNER_AGENT_URL: $DESIGNER_AGENT_URL"
+
+gcloud run deploy project-manager-agent --source ./agents/project_manager --region us-central1
+PM_AGENT_URL=$(gcloud run services describe project-manager-agent --region us-central1 --format="value(status.url)")
+sed -i "s|^PM_AGENT_URL=.*|PM_AGENT_URL=${PM_AGENT_URL}|" .env
+echo "PM_AGENT_URL: $PM_AGENT_URL"
+
