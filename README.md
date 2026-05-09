@@ -3,6 +3,8 @@ A Multi-Agent Creative Studio with Google's Agent Stack: ADK, A2A, MCP on Cloud 
 
 L'implementazione completa è disponibile come codelab pratico all'indirizzo [codelabs.developers.google.com](https://codelabs.developers.google.com/ai-creative-studio-adk-a2a?hl=it&authuser=3#0)
 
+Repository git originale [mas-a2a-gcp](https://github.com/Saoussen-CH/mas-a2a-gcp/tree/main)
+
 # Build a Multi-Agent Creative Studio with Google's Agent Stack: ADK, A2A, MCP on Cloud Run & Agent Runtime
 
 A hands-on codelab for building a distributed multimodal multi-agent system using **Google ADK**, **A2A protocol**, **MCP**, and **Gemini Enterprise Agent Platform Runtime**. Participants build a complete Instagram campaign generator from scratch, deploying five specialist agents that collaborate through A2A communication.
