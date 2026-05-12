@@ -1,6 +1,22 @@
 #Per testare localmente con la UI web di ADK
 uv run adk web agents --allow_origins='*'
 
+#Per testare a2a-inspector
+cd ~/a2a-inspector
+bash scripts/run.sh
+
+#PROMPT
+#attiva solo ricerca di mercato
+Research the Home Video Surveillance Market for Homeowners
+
+#attiva campagna completa
+Create a comprehensive Instagram campaign for home video surveillance for homeowners.
+Budget: $2,000, launch within 2 weeks.
+
+#per vedere la campagna su notion
+www.notion.so
+admin@berticloud.ai
+
 # Configurare le credenziali principali
 gcloud auth login
 
@@ -47,23 +63,26 @@ sed -i "s|GCS_IMAGES_BUCKET=your-project-id-campaign-images|GCS_IMAGES_BUCKET=${
 #  Poi configura il supporto degli URL immagine firmati. Creative Director genera link HTTPS cliccabili per ogni immagine nel riepilogo finale della campagna. Per farlo, è necessario un service account per firmare gli URL. Esegui questi comandi per configurarlo:
 export PROJECT_NUMBER=$(gcloud projects describe $(gcloud config get-value project) --format="value(projectNumber)")
 export SA_EMAIL="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
-#export AGENT_RUNTIME_SA="service-${PROJECT_NUMBER}@gcp-sa-aiplatform-re.iam.gserviceaccount.com"
-export AGENT_RUNTIME_SA="service-${PROJECT_NUMBER}@gcp-sa-aiplatform.iam.gserviceaccount.com"
+export AGENT_RUNTIME_SA="service-${PROJECT_NUMBER}@gcp-sa-aiplatform-re.iam.gserviceaccount.com"
 
-# creazione del AGENT_RUNTIME_SA ?
-gcloud beta services identity create \
-    --service=aiplatform.googleapis.com \
-    --project=${PROJECT_ID}
 
 # Allow your user account to sign URLs locally (adk web)
 gcloud iam service-accounts add-iam-policy-binding ${SA_EMAIL} \
   --member="user:$(gcloud config get-value account)" \
-  --role="roles/iam.serviceAccountTokenCreator"
+  --role="roles/iam.serviceAccountTokenCreator" 
+
+gcloud projects add-iam-policy-binding $(gcloud config get-value project) \
+    --member="serviceAccount:${SA_EMAIL}" \
+    --role="roles/logging.logWriter" \
+    --role="roles/artifactregistry.writer" \
+    --role="roles/aiplatform.user" \
+    --role="roles/storage.objectAdmin"
 
 # Allow Agent Runtime to sign URLs when deployed
 gcloud projects add-iam-policy-binding $(gcloud config get-value project) \
   --member="serviceAccount:${AGENT_RUNTIME_SA}" \
-  --role="roles/iam.serviceAccountTokenCreator"
+  --role="roles/iam.serviceAccountTokenCreator" \
+  --role="roles/storage.objectAdmin"
 
 # Save SA email and project number to .env
 grep -q "^SIGNING_SERVICE_ACCOUNT" .env \
@@ -102,31 +121,81 @@ do
 done
 
 
-#Il comando più semplice e diretto per deployare un servizio su Google Cloud Run a partire da una cartella che contiene un Dockerfile
-#aggiornare le variabili nel file .env
+# Il server MCP per Notion è infatti un'applicazione Node.js separata che funge da tramite (proxy) tra l'agente e le API di Notion e deve essere installata a livello globale nel tuo sistema o eseguita tramite npx.
+npm install -g @notionhq/notion-mcp-server@1.9.1
+export PATH=$PATH:$(npm bin -g)
 
-gcloud run deploy brand-strategist-agent --source ./agents/brand_strategist --region us-central1
+# Eseguiamo tutti e cinque gli specialisti come server A2A contemporaneamente, quindi testiamo il Creative Director localmente puntando a questi server.
+PORT=8082 uv run agents/brand_strategist/agent.py
+PORT=8083 uv run agents/copywriter/agent.py
+PORT=8084 uv run agents/designer/agent.py
+PORT=8085 uv run agents/critic/agent.py
+PORT=8086 uv run agents/project_manager/agent.py
+
+# Impostare gli URL localhost in .env
+sed -i \
+  -e 's|STRATEGIST_AGENT_URL=.*|STRATEGIST_AGENT_URL=http://localhost:8082|' \
+  -e 's|COPYWRITER_AGENT_URL=.*|COPYWRITER_AGENT_URL=http://localhost:8083|' \
+  -e 's|DESIGNER_AGENT_URL=.*|DESIGNER_AGENT_URL=http://localhost:8084|' \
+  -e 's|CRITIC_AGENT_URL=.*|CRITIC_AGENT_URL=http://localhost:8085|' \
+  -e 's|PM_AGENT_URL=.*|PM_AGENT_URL=http://localhost:8086|' \
+  .env
+
+
+
+# Il comando più semplice e diretto per deployare un servizio su Google Cloud Run a partire da una cartella che contiene un Dockerfile
+# aggiorna le variabili nel file .env
+
+# Converte il file .env in una stringa separata da virgole da aggiungere al flag:  --set-env-vars "$VARS"
+#VARS=$(grep -v '^#' .env | grep -v '^$' | tr '\n' ',' | sed 's/,$//')
+
+gcloud run deploy brand-strategist-agent --source ./agents/brand_strategist --region us-central1 --env-vars-file env_vars.yaml --allow-unauthenticated --quiet
 STRATEGIST_AGENT_URL=$(gcloud run services describe brand-strategist-agent --region us-central1 --format="value(status.url)")
 sed -i "s|^STRATEGIST_AGENT_URL=.*|STRATEGIST_AGENT_URL=${STRATEGIST_AGENT_URL}|" .env
-echo "STRATEGIST_URL: $STRATEGIST_URL"
+echo "STRATEGIST_AGENT_URL: $STRATEGIST_AGENT_URL"
 
-gcloud run deploy copywriter-agent --source ./agents/copywriter --region us-central1
+gcloud run deploy copywriter-agent --source ./agents/copywriter --region us-central1 --env-vars-file env_vars.yaml --allow-unauthenticated --quiet
 COPYWRITER_AGENT_URL=$(gcloud run services describe copywriter-agent --region us-central1 --format="value(status.url)")
 sed -i "s|^COPYWRITER_AGENT_URL=.*|COPYWRITER_AGENT_URL=${COPYWRITER_AGENT_URL}|" .env
 echo "COPYWRITER_AGENT_URL: $COPYWRITER_AGENT_URL"
 
-gcloud run deploy critic-agent --source ./agents/critic --region us-central1
+gcloud run deploy critic-agent --source ./agents/critic --region us-central1 --env-vars-file env_vars.yaml --allow-unauthenticated --quiet
 CRITIC_AGENT_URL=$(gcloud run services describe critic-agent --region us-central1 --format="value(status.url)")
 sed -i "s|^CRITIC_AGENT_URL=.*|CRITIC_AGENT_URL=${CRITIC_AGENT_URL}|" .env
 echo "CRITIC_AGENT_URL: $CRITIC_AGENT_URL"
 
-gcloud run deploy designer-agent --source ./agents/designer --region us-central1
+gcloud run deploy designer-agent --source ./agents/designer --region us-central1 --env-vars-file env_vars.yaml --allow-unauthenticated --quiet
 DESIGNER_AGENT_URL=$(gcloud run services describe designer-agent --region us-central1 --format="value(status.url)")
 sed -i "s|^DESIGNER_AGENT_URL=.*|DESIGNER_AGENT_URL=${DESIGNER_AGENT_URL}|" .env
 echo "DESIGNER_AGENT_URL: $DESIGNER_AGENT_URL"
 
-gcloud run deploy project-manager-agent --source ./agents/project_manager --region us-central1
+gcloud run deploy project-manager-agent --source ./agents/project_manager --region us-central1 --env-vars-file env_pm_vars.yaml --allow-unauthenticated --quiet
 PM_AGENT_URL=$(gcloud run services describe project-manager-agent --region us-central1 --format="value(status.url)")
 sed -i "s|^PM_AGENT_URL=.*|PM_AGENT_URL=${PM_AGENT_URL}|" .env
 echo "PM_AGENT_URL: $PM_AGENT_URL"
 
+
+#devi assicurarti che le variabili PUBLIC_HOST, PUBLIC_PORT e PROTOCOL siano configurate con l'indirizzo pubblico reale.
+#1. Al primo deploy in assoluto, tu non conosci ancora l'URL, quindi non puoi passarlo nelle variabili d'ambiente.
+#2. Devi prima fare il deploy (così Cloud Run crea il servizio e genera l'URL).
+#3. Subito dopo, devi prendere quell'URL e aggiornare il servizio iniettando la variabile PUBLIC_HOST.
+./fix_agents.sh
+
+
+#deploy dell'orchestratore su Agent Runtime
+uv run adk deploy agent_engine ./agents/creative_director \
+  --project $(gcloud config get-value project) \
+  --region us-central1 \
+  --display_name "AI Creative Studio Director" \
+  --adk_app_object app \
+  --env_file $(pwd)/.env \
+  --agent_engine_id 1041928554561929216
+
+
+gcloud projects add-iam-policy-binding creative-studio-69579 \
+    --member="serviceAccount:1055190035360-compute@developer.gserviceaccount.com" \
+    --role="roles/aiplatform.user"
+
+gcloud projects add-iam-policy-binding creative-studio-69579 \
+    --member="serviceAccount:service-1055190035360@gcp-sa-aiplatform-re.iam.gserviceaccount.com" \
+    --role="roles/aiplatform.user"

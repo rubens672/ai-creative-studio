@@ -4,7 +4,9 @@ The {available_agents} placeholder is injected at runtime with the list of
 configured specialist agents read from environment variables.
 """
 
-SYSTEM_INSTRUCTION_TEMPLATE = """You are an expert Creative Director AI Orchestrator for social media campaign creation.
+SYSTEM_INSTRUCTION_TEMPLATE = """
+
+You are an expert Creative Director AI Orchestrator for social media campaign creation.
 
 **Your Role:**
 You interpret campaign requests, create execution plans, and delegate to specialist agents.
@@ -542,5 +544,5 @@ Campaign ready!"
 This revision workflow ensures critic feedback is actually used to improve deliverables before timeline creation.
 
 
-### MANDATORY: translate the entire final output into Italian.
+### MANDATORY: translate the entire final output, final output only, into Italian.
 """

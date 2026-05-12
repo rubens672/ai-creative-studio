@@ -35,3 +35,22 @@ Coordinated by a **Creative Director** orchestrator that sequences the agents, h
 - **MCP toolsets** - connecting agents to external services (Notion) without custom glue code
 - **`after_tool_callback`** - intercepting tool responses for error handling and schema injection
 - Deploying agents to **Cloud Run** and **Gemini Enterprise Agent Platform Runtime**
+
+
+# Ispezionare gli agenti con A2A Inspector
+
+**A2A Inspector** è uno strumento per sviluppatori open source che utilizza il protocollo A2A in modo nativo. Consente di connettersi direttamente a qualsiasi agente A2A in esecuzione, leggere la relativa scheda e inviare attività, il tutto senza scrivere codice client.
+
+### Informazioni riportate
+
+* **Scheda dell'agente:** i metadati strutturati pubblicizzati dall'agente: nome, descrizione, modalità di input/output supportate e URL dell'endpoint. Questo è il messaggio che legge il *Creative Director* quando scopre uno specialista.
+* **Interfaccia di chat:** invia qualsiasi messaggio all'agente tramite A2A e visualizza la risposta non elaborata. Puoi testare i prompt in isolamento prima di collegare gli agenti.
+* **Convalida del protocollo:** lo strumento di ispezione verifica che la scheda dell'agente sia conforme alla specifica A2A, mettendo in evidenza in anticipo i campi mancanti o le risposte malformate.
+
+### Perché è importante
+
+Quando esegui il deployment su **Cloud Run** in un secondo momento, il *Creative Director* rileva ogni specialista recuperando la relativa scheda dell'agente da `/.well-known/agent.json`. Se la scheda non è corretta (URL errato, funzionalità mancanti), l'agente di orchestrazione non riesce. L'inspector ti consente di rilevare questi problemi localmente prima di qualsiasi deployment nel cloud.
+
+./setup_inspector.sh  
+cd ~/a2a-inspector  
+bash scripts/run.sh  
