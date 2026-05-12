@@ -169,7 +169,7 @@ DESIGNER_AGENT_URL=$(gcloud run services describe designer-agent --region us-cen
 sed -i "s|^DESIGNER_AGENT_URL=.*|DESIGNER_AGENT_URL=${DESIGNER_AGENT_URL}|" .env
 echo "DESIGNER_AGENT_URL: $DESIGNER_AGENT_URL"
 
-gcloud run deploy project-manager-agent --source ./agents/project_manager --region us-central1 --env-vars-file env_pm_vars.yaml --allow-unauthenticated --quiet
+gcloud run deploy project-manager-agent --source ./agents/project_manager --region us-central1 --env-vars-file env_vars.yaml --allow-unauthenticated --quiet
 PM_AGENT_URL=$(gcloud run services describe project-manager-agent --region us-central1 --format="value(status.url)")
 sed -i "s|^PM_AGENT_URL=.*|PM_AGENT_URL=${PM_AGENT_URL}|" .env
 echo "PM_AGENT_URL: $PM_AGENT_URL"
