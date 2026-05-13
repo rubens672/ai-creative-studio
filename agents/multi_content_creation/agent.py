@@ -22,29 +22,10 @@ load_dotenv()
 logger = logging.getLogger("ai_creative_studio.content_creation")
 
 
-#if __name__ == "__main__":
-#    import uvicorn
-#    from google.adk.a2a.utils.agent_to_a2a import to_a2a
-#
-#    PORT = int(os.getenv("PORT", "8082"))
-#    HOST = os.getenv("HOST", "0.0.0.0")
-#    PUBLIC_HOST = os.getenv("PUBLIC_HOST", "localhost")
-#    PUBLIC_PORT = int(os.getenv("PUBLIC_PORT", str(PORT)))
-#    PROTOCOL = os.getenv("PROTOCOL", "http")
-#
-#    a2a_app = to_a2a(root_agent, host=PUBLIC_HOST, port=PUBLIC_PORT, protocol=PROTOCOL)
-#
-#    logger.info(f"Starting Brand Strategist on {PROTOCOL}://{HOST}:{PORT}")
-#    logger.info(f"Agent card: {PROTOCOL}://{HOST}:{PORT}/.well-known/agent.json")
-#
-#    uvicorn.run(a2a_app, host=HOST, port=PORT)
-
-
 # Define All Custom Tools
 from google.adk.tools import ToolContext
 
 # --- Content Analysis Tools ---
-
 def count_words(text: str) -> int:
     """Counts the number of words in the provided text."""
     logger.info(f"🔧 Tool: Counting words...")
@@ -125,8 +106,8 @@ def generate_hashtags(text: str, count: int = 5) -> List[str]:
     logger.info(f"   Result: {', '.join(hashtags)}")
     return hashtags
 
-# --- Quality Check Tool ---
 
+# --- Quality Check Tool ---
 def calculate_content_quality_score(
     word_count: int,
     readability_score: float,
@@ -168,8 +149,8 @@ def calculate_content_quality_score(
     logger.info(f"   Result: {result['overall_score']}/100 (Threshold: {'MET' if result['meets_threshold'] else 'NOT MET'})")
     return result
 
-# --- Session State Management ---
 
+# --- Session State Management ---
 def update_session_state(
     tool_context: ToolContext,
     topic: str,
@@ -186,8 +167,8 @@ def update_session_state(
     logger.info(f"   Saved: {topic} | {target_audience} | {tone}")
     return "Session state updated with content brief parameters."
 
-# --- Loop Control ---
 
+# --- Loop Control ---
 QUALITY_THRESHOLD_MET = "QUALITY_THRESHOLD_MET"
 
 def exit_loop(tool_context: ToolContext):
@@ -217,6 +198,7 @@ intake_agent = Agent(
     tools=[update_session_state]
 )
 
+
 # --- Topic Research Agent ---
 topic_research_agent = Agent(
     name="topic_research_agent",
@@ -233,6 +215,7 @@ topic_research_agent = Agent(
     tools=[google_search],
     output_key="blog_topic"
 )
+
 
 # --- Content Drafter Agent ---
 content_drafter_agent = Agent(
@@ -255,6 +238,7 @@ content_drafter_agent = Agent(
     tools=[],
     output_key="current_content"
 )
+
 
 # --- Quality Checker Agent ---
 quality_checker_agent = Agent(
@@ -279,6 +263,7 @@ quality_checker_agent = Agent(
     tools=[calculate_content_quality_score],
     output_key="quality_feedback"
 )
+
 
 # --- Content Improver Agent ---
 content_improver_agent = Agent(
@@ -398,6 +383,7 @@ seo_metadata_agent = Agent(
     output_key="seo_metadata"
 )
 
+
 # --- Content Analyzer (Standalone) ---
 content_analyzer_agent = Agent(
     name="content_analyzer_agent",
@@ -415,6 +401,7 @@ content_analyzer_agent = Agent(
     """,
     tools=[count_words, calculate_readability_score, generate_hashtags]
 )
+
 
 # --- Final Packager Agent ---
 final_packager_agent = Agent(
@@ -443,6 +430,7 @@ final_packager_agent = Agent(
 )
 
 
+# --- Content Creation Agent ---
 content_creation_agent = Agent(
     name="content_creation",
     model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
@@ -472,7 +460,6 @@ content_creation_agent = Agent(
 )
 
 logger.info("Content Creation agent created")
-
 
 logger.info("🧞 All specialist agents created!")
 
@@ -571,3 +558,22 @@ logger.info("🧞 Master Orchestrator created!")
 logger.info("\n🎯 Capabilities:")
 logger.info("   ✅ Full content workflow (research → draft → improve → multi-channel)")
 logger.info("   ✅ Quick content analysis (words, readability, hashtags)")
+logger.info("   ✅ Research tranding blog topics and content ideas (based on niche, audience, and keywords)")
+
+
+#if __name__ == "__main__":
+#    import uvicorn
+#    from google.adk.a2a.utils.agent_to_a2a import to_a2a
+#
+#    PORT = int(os.getenv("PORT", "8082"))
+#    HOST = os.getenv("HOST", "0.0.0.0")
+#    PUBLIC_HOST = os.getenv("PUBLIC_HOST", "localhost")
+#    PUBLIC_PORT = int(os.getenv("PUBLIC_PORT", str(PORT)))
+#    PROTOCOL = os.getenv("PROTOCOL", "http")
+#
+#    a2a_app = to_a2a(root_agent, host=PUBLIC_HOST, port=PUBLIC_PORT, protocol=PROTOCOL)
+#
+#    logger.info(f"Starting Brand Strategist on {PROTOCOL}://{HOST}:{PORT}")
+#    logger.info(f"Agent card: {PROTOCOL}://{HOST}:{PORT}/.well-known/agent.json")
+#
+#    uvicorn.run(a2a_app, host=HOST, port=PORT)
