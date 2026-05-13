@@ -1,13 +1,11 @@
 [project]
-name = "ai-creative-studio"
+name = "brand-strategist"
 version = "0.1.0"
 requires-python = ">=3.11"
 dependencies = [
-    "google-adk[a2a]==1.31.1",
     "google-genai>=1.51.0",
+    "google-adk[a2a]==1.31.1",
+    "google-adk[search]",
     "uvicorn[standard]>=0.25.0",
     "python-dotenv>=1.0.0",
-    "google-cloud-storage>=2.10.0",
-    "pydantic>=2.0.0",
-    "graphviz>=0.20.1",
 ]

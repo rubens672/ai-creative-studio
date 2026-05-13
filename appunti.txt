@@ -1,6 +1,11 @@
 #Per testare localmente con la UI web di ADK
 uv run adk web agents --allow_origins='*'
 
+#installare graphviz per vedere i grafici
+sudo apt-get install graphviz
+
+#e pip install graphviz o "graphviz>=0.20.1",
+
 #Per testare a2a-inspector
 cd ~/a2a-inspector
 bash scripts/run.sh
