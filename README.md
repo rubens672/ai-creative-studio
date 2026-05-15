@@ -6,7 +6,6 @@ Thank you Saoussen, great job!
 
 L'implementazione completa è disponibile come codelab pratico all'indirizzo [codelabs.developers.google.com](https://codelabs.developers.google.com/ai-creative-studio-adk-a2a?hl=it&authuser=3#0)
 
-Repository git originale [mas-a2a-gcp](https://github.com/Saoussen-CH/mas-a2a-gcp/tree/main)
 
 # Build a Multi-Agent Creative Studio with Google's Agent Stack: ADK, A2A, MCP on Cloud Run & Agent Runtime
 
