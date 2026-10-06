@@ -4,36 +4,44 @@ FROM python:3.12-slim
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies (including graphviz for agent workflow visualization)
 # hadolint ignore=DL3008
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     curl \
+    graphviz \
     && rm -rf /var/lib/apt/lists/*
 
-# Install uv
+# Install uv package manager
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-# Copy pyproject.toml first for better layer caching
+# Setup directory structure for ADK agent discovery: /app/agents/<agent_name>/
+WORKDIR /app/agents/multi_content_creation
+
+# Copy pyproject.toml first for efficient Docker layer caching
 COPY pyproject.toml .
 
-# Install Python dependencies
+# Install dependencies into virtual environment
 RUN uv sync --no-install-project --no-dev
 
-# Copy application code
+# Copy agent application code
 COPY . .
 
-# Create a non-root user
+# Set working directory to /app
+WORKDIR /app
+
+# Create a non-root user for security
 RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
 USER appuser
 
-# Set environment variables
+# Environment variables
 ENV PYTHONUNBUFFERED=1
 ENV PORT=8080
 ENV HOST=0.0.0.0
+ENV PATH="/app/agents/multi_content_creation/.venv/bin:$PATH"
 
-# Expose the port Cloud Run will use
+# Expose port for Cloud Run
 EXPOSE 8080
 
-# Run the A2A server
-CMD ["uv", "run", "python", "agent.py"]
+# Launch ADK Web UI
+CMD ["adk", "web", "--host", "0.0.0.0", "--port", "8080", "--allow_origins=*", "/app/agents"]

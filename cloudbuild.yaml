@@ -70,30 +70,6 @@ steps:
 
         eval "$$DEPLOY_CMD"
 
-  # ----------------------------------------------------------------------------
-  # Step 4: Configure Public Host for A2A Discovery
-  # ----------------------------------------------------------------------------
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
-    id: 'Configure A2A Public Host'
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-        echo "Retrieving Cloud Run Service URL..."
-        SERVICE_URL=$$(gcloud run services describe ${_SERVICE_NAME} --region=${_REGION} --format="value(status.url)")
-        
-        if [ -n "$$SERVICE_URL" ]; then
-          PUBLIC_HOST=$$(echo $$SERVICE_URL | sed 's|https://||')
-          echo "Setting PUBLIC_HOST=$$PUBLIC_HOST for A2A agent card registration..."
-          gcloud run services update ${_SERVICE_NAME} \
-            --region=${_REGION} \
-            --update-env-vars="PUBLIC_HOST=$$PUBLIC_HOST,PUBLIC_PORT=443,PROTOCOL=https" \
-            --quiet
-          echo "Deployment and A2A configuration completed successfully!"
-        else
-          echo "Warning: Could not retrieve service URL."
-        fi
-
 images:
   - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_SERVICE_NAME}:${SHORT_SHA}'
   - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_SERVICE_NAME}:latest'
