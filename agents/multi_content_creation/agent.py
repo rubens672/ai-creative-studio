@@ -573,6 +573,22 @@ if __name__ == "__main__":
 
     a2a_app = to_a2a(root_agent, host=PUBLIC_HOST, port=PUBLIC_PORT, protocol=PROTOCOL)
 
+    from starlette.responses import JSONResponse
+
+    async def root_handler(request):
+        return JSONResponse({
+            "status": "online",
+            "service": "AI Creative Studio - Multi Content Creation Agent",
+            "protocol": "A2A (Agent-to-Agent)",
+            "endpoints": {
+                "agent_card": f"{PROTOCOL}://{PUBLIC_HOST}/.well-known/agent.json",
+                "rpc_endpoint": f"{PROTOCOL}://{PUBLIC_HOST}/",
+            },
+            "message": "Service is healthy and ready. Send POST requests for A2A RPC calls."
+        })
+
+    a2a_app.add_route("/", root_handler, methods=["GET"])
+
     logger.info(f"Starting Multi Content Creation on {PROTOCOL}://{HOST}:{PORT}")
     logger.info(f"Agent card: {PROTOCOL}://{HOST}:{PORT}/.well-known/agent.json")
 
