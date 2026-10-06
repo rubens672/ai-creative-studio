@@ -561,19 +561,19 @@ logger.info("   ✅ Quick content analysis (words, readability, hashtags)")
 logger.info("   ✅ Research tranding blog topics and content ideas (based on niche, audience, and keywords)")
 
 
-#if __name__ == "__main__":
-#    import uvicorn
-#    from google.adk.a2a.utils.agent_to_a2a import to_a2a
-#
-#    PORT = int(os.getenv("PORT", "8082"))
-#    HOST = os.getenv("HOST", "0.0.0.0")
-#    PUBLIC_HOST = os.getenv("PUBLIC_HOST", "localhost")
-#    PUBLIC_PORT = int(os.getenv("PUBLIC_PORT", str(PORT)))
-#    PROTOCOL = os.getenv("PROTOCOL", "http")
-#
-#    a2a_app = to_a2a(root_agent, host=PUBLIC_HOST, port=PUBLIC_PORT, protocol=PROTOCOL)
-#
-#    logger.info(f"Starting Brand Strategist on {PROTOCOL}://{HOST}:{PORT}")
-#    logger.info(f"Agent card: {PROTOCOL}://{HOST}:{PORT}/.well-known/agent.json")
-#
-#    uvicorn.run(a2a_app, host=HOST, port=PORT)
+if __name__ == "__main__":
+    import uvicorn
+    from google.adk.a2a.utils.agent_to_a2a import to_a2a
+
+    PORT = int(os.getenv("PORT", "8080"))
+    HOST = os.getenv("HOST", "0.0.0.0")
+    PUBLIC_HOST = os.getenv("PUBLIC_HOST", "localhost")
+    PUBLIC_PORT = int(os.getenv("PUBLIC_PORT", str(PORT)))
+    PROTOCOL = os.getenv("PROTOCOL", "http")
+
+    a2a_app = to_a2a(root_agent, host=PUBLIC_HOST, port=PUBLIC_PORT, protocol=PROTOCOL)
+
+    logger.info(f"Starting Multi Content Creation on {PROTOCOL}://{HOST}:{PORT}")
+    logger.info(f"Agent card: {PROTOCOL}://{HOST}:{PORT}/.well-known/agent.json")
+
+    uvicorn.run(a2a_app, host=HOST, port=PORT)

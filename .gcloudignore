@@ -1,0 +1,25 @@
+.gcloudignore
+.git
+.gitignore
+
+# Environments and Secrets
+.env
+.env.*
+!.env.example
+env_vars.yaml
+env_vars.*.yaml
+!env_vars.example.yaml
+*.key
+*.pem
+credentials.json
+
+# Python and virtualenvs
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+
+# ADK database and session
+.adk/
+*.db
+*.sqlite3

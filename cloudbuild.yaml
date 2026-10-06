@@ -1,0 +1,102 @@
+# ==============================================================================
+# Cloud Build Pipeline for ADK Agent on Google Cloud Run
+# ==============================================================================
+# This configuration builds the container image and deploys it to Cloud Run.
+# Project ID and Project Number are injected automatically by Cloud Build.
+# Sensitive information and custom values are passed via Cloud Build Trigger
+# Substitutions and/or Secret Manager, avoiding any hardcoded secrets on GitHub.
+# ==============================================================================
+
+substitutions:
+  _REGION: europe-west1
+  _VERTEX_LOCATION: global
+  _GEMINI_MODEL: gemini-3.8-flash
+  _GEMINI_IMAGE_MODEL: gemini-3.1-flash-image-preview
+  _SERVICE_NAME: multi-content-creation-agent
+  _AGENT_DIR: agents/multi_content_creation
+  _AR_REPO: cloud-run-agents
+  _ALLOW_UNAUTHENTICATED: --allow-unauthenticated
+  _SECRETS_FLAG: ""
+
+steps:
+  # ----------------------------------------------------------------------------
+  # Step 1: Build Docker Container
+  # ----------------------------------------------------------------------------
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'Build Container Image'
+    args:
+      - 'build'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_SERVICE_NAME}:${SHORT_SHA}'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_SERVICE_NAME}:latest'
+      - '${_AGENT_DIR}'
+
+  # ----------------------------------------------------------------------------
+  # Step 2: Push Container to Artifact Registry
+  # ----------------------------------------------------------------------------
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'Push Container Image'
+    args:
+      - 'push'
+      - '--all-tags'
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_SERVICE_NAME}'
+
+  # ----------------------------------------------------------------------------
+  # Step 3: Deploy to Cloud Run
+  # ----------------------------------------------------------------------------
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+    id: 'Deploy to Cloud Run'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "Deploying ${_SERVICE_NAME} to Cloud Run in ${_REGION}..."
+        
+        DEPLOY_CMD="gcloud run deploy ${_SERVICE_NAME} \
+          --image=${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_SERVICE_NAME}:${SHORT_SHA} \
+          --region=${_REGION} \
+          --platform=managed \
+          ${_ALLOW_UNAUTHENTICATED} \
+          --port=8080 \
+          --memory=2Gi \
+          --cpu=2 \
+          --timeout=300s \
+          --set-env-vars=GOOGLE_CLOUD_PROJECT=${PROJECT_ID},GOOGLE_CLOUD_PROJECT_NUMBER=${PROJECT_NUMBER},GOOGLE_CLOUD_LOCATION=${_VERTEX_LOCATION},GEMINI_MODEL=${_GEMINI_MODEL},GEMINI_IMAGE_MODEL=${_GEMINI_IMAGE_MODEL},GOOGLE_GENAI_USE_VERTEXAI=1"
+
+        if [ -n "${_SECRETS_FLAG}" ]; then
+          DEPLOY_CMD="$${DEPLOY_CMD} ${_SECRETS_FLAG}"
+        fi
+
+        eval "$$DEPLOY_CMD"
+
+  # ----------------------------------------------------------------------------
+  # Step 4: Configure Public Host for A2A Discovery
+  # ----------------------------------------------------------------------------
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+    id: 'Configure A2A Public Host'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "Retrieving Cloud Run Service URL..."
+        SERVICE_URL=$$(gcloud run services describe ${_SERVICE_NAME} --region=${_REGION} --format="value(status.url)")
+        
+        if [ -n "$$SERVICE_URL" ]; then
+          PUBLIC_HOST=$$(echo $$SERVICE_URL | sed 's|https://||')
+          echo "Setting PUBLIC_HOST=$$PUBLIC_HOST for A2A agent card registration..."
+          gcloud run services update ${_SERVICE_NAME} \
+            --region=${_REGION} \
+            --update-env-vars="PUBLIC_HOST=$$PUBLIC_HOST,PUBLIC_PORT=443,PROTOCOL=https" \
+            --quiet
+          echo "Deployment and A2A configuration completed successfully!"
+        else
+          echo "Warning: Could not retrieve service URL."
+        fi
+
+images:
+  - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_SERVICE_NAME}:${SHORT_SHA}'
+  - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_SERVICE_NAME}:latest'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
